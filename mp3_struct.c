@@ -22,6 +22,13 @@ int get_header_data_size(struct mp3_header header) {
   return result;
 }
 
+bool exam_frame_header(struct mp3_frame_header header) {
+  int frame_sync = 0;
+  frame_sync |= (header.first_byte & 0xFF) << 3;
+  frame_sync |= (header.second_byte & 0xE0) >> 5;
+  return frame_sync == 0x07FF;
+}
+
 int get_bit_rate(struct mp3_frame_header s) {
   int bit_rate_code = (s.third_byte & 0xFF) >> 4;
   switch (bit_rate_code) {
@@ -83,4 +90,9 @@ int get_frame_len(struct mp3_frame_header s) {
   int padding = (s.third_byte & 0x02) >> 1;
   // bit_rate in k
   return (int)((144 * bit_rate * 1000 / sampling_rate) + padding);
+}
+
+int get_frame_data_len(struct mp3_frame_header s) {
+  int frame_len = get_frame_len(s);
+  return frame_len - sizeof(struct mp3_frame_header);
 }

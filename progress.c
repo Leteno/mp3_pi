@@ -28,7 +28,7 @@ int init_mp3_frame_header_progress(struct parsing_mp3_frame_header_progress* pro
   return 0;
 }
 int init_mp3_frame_data_progress(struct parsing_mp3_frame_data_progress* progress, struct mp3_frame_header frame_header) {
-  int frame_len = get_frame_len(frame_header);
+  int frame_len = get_frame_data_len(frame_header);
   progress->expected_len = frame_len;
   progress->frame_data->data_size = frame_len;
   progress->frame_data->data = (char*) malloc((frame_len + 1) * sizeof(char));

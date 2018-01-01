@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <string.h>
@@ -84,6 +85,10 @@ int mp3_check(char* filename)
 
 int on_frame_header_read_finish(struct parsing_mp3_frame_header_progress progress) {
   struct mp3_frame_header header = *(progress.header);
+  if (!exam_frame_header(header)) {
+    printf("exam fail on %s", (char* )progress.header);
+    exit(1);
+  }
   int bit_rate = get_bit_rate(header);
   int sampling_rate = get_sampling_rate_frequency(header);
   int frame_len = get_frame_len(header);
@@ -93,6 +98,6 @@ int on_frame_header_read_finish(struct parsing_mp3_frame_header_progress progres
 
 int on_frame_data_read_finish(struct parsing_mp3_frame_data_progress progress) {
   struct mp3_frame_data data = *(progress.frame_data);
-  printf("frame_data: %s, data_size: %d\n", data.data, data.data_size);
+  printf("frame_data_size: %d\n", data.data_size);
   return 0;
 }

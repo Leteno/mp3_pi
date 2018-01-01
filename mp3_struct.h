@@ -37,9 +37,11 @@ struct mp3_frame_header {
   char forth_byte;
 };
 
+bool exam_frame_header(struct mp3_frame_header header);
 int get_bit_rate(struct mp3_frame_header s);
 int get_sampling_rate_frequency(struct mp3_frame_header s);
 int get_frame_len(struct mp3_frame_header s);
+int get_frame_data_len(struct mp3_frame_header s);
 
 struct mp3_frame_data {
   char *data; // do not forget to free it
