@@ -63,7 +63,7 @@ int mp3_check(char* filename)
       int consume = parse_mp3_frame_header(&frame_header_progress, buff + read_count - buffer_left_count, buffer_left_count);
       buffer_left_count -= consume;
       if (frame_header_progress.expected_len == 0) {
-        init_mp3_frame_header_progress(&frame_header_progress, frame_header_progress.header);
+        init_mp3_frame_data_progress(&frame_data_progress, *(frame_header_progress.header));
         on_frame_header_read_finish(frame_header_progress);
       }
       goto read_loop;

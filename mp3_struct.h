@@ -13,20 +13,28 @@ struct mp3_header {
 bool is_start_with_frame_header(char* buff, int buff_size);
 int get_header_data_size(struct mp3_header header);
 
+// AAAAAAAA   AAABBCCD   EEEEFFGH   IIJJKLMM 
+/**
+   see http://www.multiweb.cz/twoinches/mp3inside.htm for detail
+   A:frame_syncronizer
+   B:mpeg_version
+   C:layer
+   D:crc_protection
+   E:bit_rate_index
+   F:sampling_rate_frequency_index
+   G:padding
+   H:private_bit
+   I:channel
+   J:mode_extension
+   K:copyright
+   L:original
+   M:emphasis
+ */
 struct mp3_frame_header {
-  bool frame_syncronizer[11];
-  bool mpeg_ver[2];
-  bool layer[2];
-  bool crc_protection;
-  bool bit_rate_index[4];
-  bool sampling_rate_frequency_index[2];
-  bool padding;
-  bool private_bit;
-  bool channel[2];
-  bool mode_extension[2];
-  bool copyright;
-  bool original;
-  bool emphasis[2];
+  char first_byte;
+  char second_byte;
+  char third_byte;
+  char forth_byte;
 };
 
 int get_bit_rate(struct mp3_frame_header s);
