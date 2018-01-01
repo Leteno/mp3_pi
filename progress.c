@@ -22,6 +22,13 @@ int init_mp3_header_data_progress(struct parsing_mp3_header_data_progress* progr
   return 0;
 }
 
+int free_mp3_header_data_progress(struct parsing_mp3_header_data_progress* progress) {
+  if (progress && progress->data) {
+    free(progress->data);
+  }
+  return 0;
+}
+
 int init_mp3_frame_header_progress(struct parsing_mp3_frame_header_progress* progress, struct mp3_frame_header* header) {
   progress->expected_len = FRAME_HEADER_SIZE;
   progress->header = header;
@@ -35,7 +42,7 @@ int init_mp3_frame_data_progress(struct parsing_mp3_frame_data_progress* progres
   return 0;
 }
 int free_mp3_frame_data_progress(struct parsing_mp3_frame_data_progress* progress) {
-  if (progress && progress->frame_data && progress->frame_data->data) {
+  if (progress && progress->frame_data && progress->frame_data->data && progress->frame_data->data_size) { // buggy here, when call this function without init_mp3_frame_data_progress first, it will crash. Add data_size to reduce it, but it is still buggy.
     free(progress->frame_data->data);
   }
   return 0;
