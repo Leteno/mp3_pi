@@ -4,8 +4,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include "mp3_struct.h"
+#include "progress.h"
 
 int mp3_check(char* filename);
+
+int on_frame_header_read_finish(struct parsing_mp3_frame_header_progress progress);
+int on_frame_data_read_finish(struct parsing_mp3_frame_data_progress progress);
 
 int main(int argc, char** argv) {
   printf("helloworld\n");
@@ -17,8 +21,6 @@ int mp3_check(char* filename)
 {
   int fd;
   #define BUFFER_SIZE 256
-  char buff1[BUFFER_SIZE + 1];
-  char buff2[BUFFER_SIZE + 1];
 
   fd = open(filename, O_RDONLY);
   if (fd == -1) {
@@ -26,30 +28,71 @@ int mp3_check(char* filename)
     return -1;
   }
 
-  bool duty = false;
-  int read_count = 1;
-  char* buff;
-  char* last_buff;
-  struct progress progress0;
+  struct parsing_mp3_header_progress header_progress;
+  struct parsing_mp3_header_data_progress header_data_progress;
+  struct parsing_mp3_frame_header_progress frame_header_progress;
+  struct parsing_mp3_frame_data_progress frame_data_progress;
   struct mp3_header _mp3_header;
   struct mp3_frame_header _mp3_frame_header;
-  progress0.is_begun = false;
+  init_mp3_header_progress(&header_progress, &_mp3_header);
+  init_mp3_frame_header_progress(&frame_header_progress, &_mp3_frame_header);
+
+  int read_count = 1, buffer_left_count;
+  char buff[BUFFER_SIZE];
+
 
   while (read_count) {
-    buff = duty ? buff1 : buff2;
-    last_buff = !duty ? buff1 : buff2;
-    duty = !duty;
     read_count = read(fd, buff, BUFFER_SIZE);
-    if (!progress0.is_begun) {
-      progress0.is_begun = true;
-      if (is_start_with_tag(buff)) {
-      } else {
-        memcpy((void*)&_mp3_header, buff, sizeof(struct mp3_header)); // buggy thank god sizeof(mp3_header) << sizeof(buff)
-        printf("mp3_header tag_identifier: %3s, tag_size: %d\n", _mp3_header.tag_identifier, get_tag_size(_mp3_header));
+    buffer_left_count = read_count;
+  read_loop:
+    if (buffer_left_count == 0) {
+      continue;
+    }
+    if (header_progress.expected_len > 0) {
+      int consume = parse_mp3_header(&header_progress, buff + read_count - buffer_left_count, buffer_left_count);
+      buffer_left_count -= consume;
+      if (header_progress.expected_len == 0) {
+        init_mp3_header_data_progress(&header_data_progress, *(header_progress.header));
       }
+      goto read_loop;
+    } else if (header_data_progress.expected_len > 0) {
+      int consume = parse_mp3_header_data(&header_data_progress, buff + read_count - buffer_left_count, buffer_left_count);
+      buffer_left_count -= consume;
+      goto read_loop;
+    } else if (frame_header_progress.expected_len > 0) {
+      int consume = parse_mp3_frame_header(&frame_header_progress, buff + read_count - buffer_left_count, buffer_left_count);
+      buffer_left_count -= consume;
+      if (frame_header_progress.expected_len == 0) {
+        init_mp3_frame_header_progress(&frame_header_progress, frame_header_progress.header);
+        on_frame_header_read_finish(frame_header_progress);
+      }
+      goto read_loop;
+    } else if (frame_data_progress.expected_len > 0) {
+      int consume = parse_mp3_frame_data(&frame_data_progress, buff, buffer_left_count);
+      buffer_left_count -= consume;
+      if (frame_data_progress.expected_len == 0) {
+        on_frame_data_read_finish(frame_data_progress);
+        init_mp3_frame_header_progress(&frame_header_progress, &_mp3_frame_header);
+      }
+      goto read_loop;
     }
   }
 
   close(fd);
+  return 0;
+}
+
+int on_frame_header_read_finish(struct parsing_mp3_frame_header_progress progress) {
+  struct mp3_frame_header header = *(progress.header);
+  int bit_rate = get_bit_rate(header);
+  int sampling_rate = get_sampling_rate_frequency(header);
+  int frame_len = get_frame_len(header);
+  printf("got frame header: bit_rate:%d, sampling_rate:%d, frame_len:%d\n", bit_rate, sampling_rate, frame_len);
+  return 0;
+}
+
+int on_frame_data_read_finish(struct parsing_mp3_frame_data_progress progress) {
+  struct mp3_frame_data data = *(progress.frame_data);
+  printf("frame_data: %s, data_size: %d\n", data.data, data.data_size);
   return 0;
 }

@@ -1,20 +1,24 @@
 #include "mp3_struct.h"
 #include "stdio.h"
-bool is_start_with_tag(char* buff) {
+#include <unistd.h>
+
+bool is_start_with_frame_header(char* buff, int buff_size) { // buggy, buff_size
+  // first 11 bits should be 1
+  bool* bitReader = (bool*) buff;
   int frame_syncronizer_size = 11;
   for (int i = 0; i < frame_syncronizer_size; i++) {
-    if (!*(buff + i)) return false; // may cause overflow
+    if (!*(bitReader + i)) return false; // may cause overflow
   }
   return true;
 }
 
-int get_tag_size(struct mp3_header header) {
+int get_header_data_size(struct mp3_header header) {
   int result = 0;
   char* size = header.tag_size_with_some_trick;
-  result |= size[0] & 0x7f;
-  result |= size[1] & 0x7f << 7;
-  result |= size[2] & 0x7f << 14;
-  result |= size[3] & 0x7f << 21;
+  result |= size[0] & 0x7f << 21;
+  result |= size[1] & 0x7f << 14;
+  result |= size[2] & 0x7f << 7;
+  result |= size[3] & 0x7f;
   return result;
 }
 

@@ -10,8 +10,8 @@ struct mp3_header {
   char flag;
   char tag_size_with_some_trick[4];
 };
-bool is_start_with_tag(char* buff);
-int get_tag_size(struct mp3_header header);
+bool is_start_with_frame_header(char* buff, int buff_size);
+int get_header_data_size(struct mp3_header header);
 
 struct mp3_frame_header {
   bool frame_syncronizer[11];
@@ -33,10 +33,9 @@ int get_bit_rate(struct mp3_frame_header s);
 int get_sampling_rate_frequency(struct mp3_frame_header s);
 int get_frame_len(struct mp3_frame_header s);
 
-struct progress {
-  bool is_begun;
-  bool parsing_tag;
-  int left_len;
+struct mp3_frame_data {
+  char *data; // do not forget to free it
+  int data_size;
 };
 
 #endif
